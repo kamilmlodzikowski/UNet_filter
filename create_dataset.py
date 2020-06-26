@@ -7,7 +7,6 @@ ORG_DIR = "org_img"
 INPUT_DATA_DIR = "dataset/input"
 OUTPUT_DATA_DIR = "dataset/output"
 INPUT_SIZE = 572
-blank_img = np.zeros((INPUT_SIZE, INPUT_SIZE))
 
 def reshape(img):
     height = img.shape[0]
