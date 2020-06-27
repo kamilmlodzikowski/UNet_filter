@@ -7,7 +7,6 @@ from tqdm import tqdm
 import cv2 as cv
 import model
 import pickle
-import matplotlib.pyplot as plt
 
 REBUILD_DATA = False
 HARDER_DATA = False
@@ -16,7 +15,7 @@ IN_DIR = "dataset/input"
 OUT_DIR = "dataset/output"
 
 BATCH_SIZE = 8
-EPOCHS = 10
+EPOCHS = 5
 
 
 def load_data(rebuild=REBUILD_DATA):
@@ -112,17 +111,28 @@ for epoch in range(EPOCHS):
         batch_X = batch_X.to(device)
 
         batch_Y = training_dataY[i:i + BATCH_SIZE].view(-1, 1, net.OUTPUT_SIZE, net.OUTPUT_SIZE)
-        batch_Y = batch_Y.to(device)
+
 
         net.zero_grad()
         outputs = net(batch_X)
-        print("OUT: ", outputs.shape)
-        print("Y:   " ,batch_Y.shape)
+        # print("OUT: ", outputs.shape)
+        # print("Y:   " ,batch_Y.shape)
+        del batch_X
+        torch.cuda.empty_cache()
+
+        batch_Y = batch_Y.to(device)
         loss = net.loss_function(outputs, batch_Y)
         loss.backward()
         net.optimizer.step()
         del batch_Y
-        del batch_X
         torch.cuda.empty_cache()
+
+    print("SAVING MODEL FOR EPOCH ", epoch)
+    mdl_name = net.MODEL_NAME + str(epoch)+".pickle"
+    file = open(mdl_name, "wb")
+    pickle.dump(net, file)
+    file.close()
+    print("MODEL SAVED")
+
     print("LOSS: ", loss)
 
