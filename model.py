@@ -26,31 +26,31 @@ class UNet(nn.Module):
         self.max_pool_4 = nn.MaxPool2d(2, 2, return_indices=False)
         self.down_conv_5 = self.double_conv3x3(256, 512)
 
-        # DECRYPTOR
+        # DECRYPTER
         self.up_pool_1 = nn.ConvTranspose2d(
             in_channels=512,
-            out_channels=512,
+            out_channels=256,
             kernel_size=2,
             stride=2
         )
         self.up_conv_1 = self.double_conv3x3(512, 256)
         self.up_pool_2 = nn.ConvTranspose2d(
             in_channels=256,
-            out_channels=256,
+            out_channels=128,
             kernel_size=2,
             stride=2
         )
         self.up_conv_2 = self.double_conv3x3(256, 128)
         self.up_pool_3 = nn.ConvTranspose2d(
             in_channels=128,
-            out_channels=128,
+            out_channels=64,
             kernel_size=2,
             stride=2
         )
         self.up_conv_3 = self.double_conv3x3(128, 64)
         self.up_pool_4 = nn.ConvTranspose2d(
             in_channels=64,
-            out_channels=64,
+            out_channels=32,
             kernel_size=2,
             stride=2
         )
@@ -58,27 +58,45 @@ class UNet(nn.Module):
         self.final_conv = nn.Conv2d(32, 1, 1)
         self.sigm = nn.Sigmoid()
 
-        self.loss_function = nn.BCELoss(reduction='sum')
+        self.loss_function = nn.MSELoss(reduction='sum')
         self.optimizer = optim.Adam(self.parameters(), lr=0.001)
 
+    def crop_tensor(self, tensor, target_tensor):
+        target_size = target_tensor.size()[2]
+        tensor_size = tensor.size()[2]
+        d = tensor_size - target_size
+        d = d // 2
+        return tensor[:, :, d:tensor_size-d, d:tensor_size-d]
+
     def forward(self, img):
-        x = self.down_conv_1(img)
-        x = self.max_pool_1(x)
-        x = self.down_conv_2(x)
-        x = self.max_pool_2(x)
-        x = self.down_conv_3(x)
-        x = self.max_pool_4(x)
-        x = self.down_conv_4(x)
-        x = self.max_pool_4(x)
-        x = self.down_conv_5(x)
-        x = self.up_pool_1(x)
-        x = self.up_conv_1(x)
+        # ENCRYPTOR
+        x1 = self.down_conv_1(img)
+        x2 = self.max_pool_1(x1)
+        x3 = self.down_conv_2(x2)
+        x4 = self.max_pool_2(x3)
+        x5 = self.down_conv_3(x4)
+        x6 = self.max_pool_4(x5)
+        x7 = self.down_conv_4(x6)
+        x8 = self.max_pool_4(x7)
+        x9 = self.down_conv_5(x8)
+
+        # DECRYPTER
+        x = self.up_pool_1(x9)
+        y = self.crop_tensor(x7, x)
+        x = self.up_conv_1(torch.cat([x, y], 1))
+
         x = self.up_pool_2(x)
-        x = self.up_conv_2(x)
+        y = self.crop_tensor(x5, x)
+        x = self.up_conv_2(torch.cat([x, y], 1))
+
         x = self.up_pool_3(x)
-        x = self.up_conv_3(x)
+        y = self.crop_tensor(x3, x)
+        x = self.up_conv_3(torch.cat([x, y], 1))
+
         x = self.up_pool_4(x)
-        x = self.up_conv_4(x)
+        y = self.crop_tensor(x1, x)
+        x = self.up_conv_4(torch.cat([x, y], 1))
+
         x = self.final_conv(x)
         x = self.sigm(x)
 

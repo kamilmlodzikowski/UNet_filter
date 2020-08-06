@@ -7,15 +7,15 @@ import model
 import pickle
 
 FILE = "dataset/input"
-mdl_file = "model/UNet_mdl0.pickle"
+mdl_file = "model/UNet_mdl5.pickle"
 
-if torch.cuda.is_available():
-    device = torch.device("cuda:0")
-    print("Running on GPU")
-else:
-    device = torch.device("cpu")
-    print("Running on CPU")
-
+# if torch.cuda.is_available():
+#     device = torch.device("cuda:0")
+#     print("Running on GPU")
+# else:
+#     device = torch.device("cpu")
+#     print("Running on CPU")
+device = torch.device("cpu")
 files =[]
 
 if os.path.isdir(FILE):
@@ -38,7 +38,7 @@ for f_img in files:
         img = img / 255
         img = img.to(device)
         out = net(img)
-        out = out.to("cpu")
+        out = out.to('cpu')
         out = out.view(net.OUTPUT_SIZE, net.OUTPUT_SIZE).numpy()
         cv.imshow("OUTPUT", out)
         cv.waitKey(600)
