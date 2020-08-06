@@ -2,13 +2,16 @@ import cv2 as cv
 import os
 import numpy as np
 from tqdm import tqdm
+from model import INPUT_SIZE_ORG, OUTPUT_SIZE_ORG
 
 ORG_DIR = "org_img"
 INPUT_DATA_DIR = "dataset/input"
 OUTPUT_DATA_DIR = "dataset/output"
-INPUT_SIZE = 572
-OUTPUT_SIZE = 388
+INPUT_SIZE = INPUT_SIZE_ORG  # 572
+OUTPUT_SIZE = OUTPUT_SIZE_ORG  # 388
+DATA_MAX_SIZE = 1000
 ADD_BORDERS = False
+CUT_IMG = True
 
 def reshape(img, des_size):
     height = img.shape[0]
@@ -25,13 +28,18 @@ def reshape(img, des_size):
     return image
 
 i = 0
-for file in tqdm(os.listdir(ORG_DIR)):
+for file in tqdm(os.listdir(ORG_DIR)[:DATA_MAX_SIZE*2]):
     file = os.path.join(ORG_DIR, file)
     try:
         img = cv.imread(file, cv.IMREAD_GRAYSCALE)
         img = img.astype(np.uint8)
         if ADD_BORDERS:
             image = reshape(img, OUTPUT_SIZE)
+        elif CUT_IMG:
+            image = cv.resize(img, (INPUT_SIZE, INPUT_SIZE))
+            d = (INPUT_SIZE - OUTPUT_SIZE) // 2
+            image = image[d:INPUT_SIZE - d, d:INPUT_SIZE - d]
+            # print(image.shape)
         else:
             image = cv.resize(img, (OUTPUT_SIZE, OUTPUT_SIZE))
         name = file[len(ORG_DIR) + 1:-4]

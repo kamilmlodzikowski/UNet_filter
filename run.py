@@ -6,6 +6,8 @@ import cv2 as cv
 import model
 import pickle
 
+DATA_MAX_SIZE = 1000
+
 FILE = "dataset/input"
 mdl_file = "model/UNet_mdl5.pickle"
 
@@ -30,7 +32,7 @@ net = pickle.load(file)
 file.close()
 net.to(device)
 
-for f_img in files:
+for f_img in files[DATA_MAX_SIZE:DATA_MAX_SIZE*2]:
     with torch.no_grad():
         img = cv.imread(f_img, cv.IMREAD_GRAYSCALE)
         cv.imshow("INPUT", img)
@@ -41,4 +43,4 @@ for f_img in files:
         out = out.to('cpu')
         out = out.view(net.OUTPUT_SIZE, net.OUTPUT_SIZE).numpy()
         cv.imshow("OUTPUT", out)
-        cv.waitKey(600)
+        cv.waitKey(500)

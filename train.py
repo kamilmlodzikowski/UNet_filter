@@ -16,6 +16,7 @@ MODEL_FILE = "model/UNet_mdl179.pickle"
 
 IN_DIR = "dataset/input"
 OUT_DIR = "dataset/output"
+DATA_MAX_SIZE = 1000
 
 BATCH_SIZE = 8
 EPOCHS = 500
@@ -66,7 +67,7 @@ def create_training_data(dir_input, dir_output):
     global training_dataX, training_dataY
     training_dataX = []
     training_dataY = []
-    for file in tqdm(os.listdir(dir_output)):
+    for file in tqdm(os.listdir(dir_output)[:DATA_MAX_SIZE]):
         try:
             out_path = os.path.join(dir_output, file)
             out_img = cv.imread(out_path, cv.IMREAD_GRAYSCALE)

@@ -6,10 +6,13 @@ import os
 from tqdm import tqdm
 import torch.optim as optim
 
+INPUT_SIZE_ORG = 572
+OUTPUT_SIZE_ORG = 388
+
 class UNet(nn.Module):
     training_data = []
-    INPUT_SIZE = 572
-    OUTPUT_SIZE = 388
+    INPUT_SIZE = INPUT_SIZE_ORG
+    OUTPUT_SIZE = OUTPUT_SIZE_ORG
     MODEL_NAME = "model/UNet_mdl"
 
     def __init__(self):
