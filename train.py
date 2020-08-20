@@ -7,16 +7,19 @@ from tqdm import tqdm
 import cv2 as cv
 import model
 import pickle
-import matplotlib.pyplot as plt
 
 REBUILD_DATA = False
 HARDER_DATA = False
 
+LOAD_MODEL = False
+MODEL_FILE = "model/UNet_mdl179.pickle"
+
 IN_DIR = "dataset/input"
 OUT_DIR = "dataset/output"
+DATA_MAX_SIZE = 1000
 
 BATCH_SIZE = 8
-EPOCHS = 10
+EPOCHS = 500
 
 
 def load_data(rebuild=REBUILD_DATA):
@@ -64,7 +67,7 @@ def create_training_data(dir_input, dir_output):
     global training_dataX, training_dataY
     training_dataX = []
     training_dataY = []
-    for file in tqdm(os.listdir(dir_output)[:1000]):
+    for file in tqdm(os.listdir(dir_output)[:DATA_MAX_SIZE]):
         try:
             out_path = os.path.join(dir_output, file)
             out_img = cv.imread(out_path, cv.IMREAD_GRAYSCALE)
@@ -95,7 +98,15 @@ else:
     print("Running on CPU")
 
 # CREATING MODEL
-net = model.UNet().to(device)
+if LOAD_MODEL:
+    mdl_file = open(MODEL_FILE, "rb")
+    net = pickle.load(mdl_file)
+    mdl_file.close()
+else:
+    net = model.UNet().to(device)
+
+net = net.to(device)
+# net.loss_function = nn.MSELoss()
 
 training_dataX = torch.Tensor()
 training_dataY = torch.Tensor()
@@ -112,17 +123,29 @@ for epoch in range(EPOCHS):
         batch_X = batch_X.to(device)
 
         batch_Y = training_dataY[i:i + BATCH_SIZE].view(-1, 1, net.OUTPUT_SIZE, net.OUTPUT_SIZE)
-        batch_Y = batch_Y.to(device)
 
         net.zero_grad()
         outputs = net(batch_X)
-        print("OUT: ", outputs.shape)
-        print("Y:   " ,batch_Y.shape)
+        # print("OUT: ", outputs.shape)
+        # print("Y:   " ,batch_Y.shape)
+        del batch_X
+        torch.cuda.empty_cache()
+
+        batch_Y = batch_Y.to(device)
         loss = net.loss_function(outputs, batch_Y)
         loss.backward()
         net.optimizer.step()
         del batch_Y
-        del batch_X
         torch.cuda.empty_cache()
-    print("LOSS: ", loss)
+    
+    if epoch % 5 == 0:
+        print("SAVING MODEL FOR EPOCH ", epoch)
+        mdl_name = net.MODEL_NAME + str(epoch)+".pickle"
+        file = open(mdl_name, "wb")
+        pickle.dump(net, file)
+        file.close()
+        print("MODEL SAVED")
+
+    print("\nLOSS: ", loss, "\n")
+
 
