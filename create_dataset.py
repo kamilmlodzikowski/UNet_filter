@@ -31,7 +31,7 @@ i = 0
 for file in tqdm(os.listdir(ORG_DIR)[:DATA_MAX_SIZE*2]):
     file = os.path.join(ORG_DIR, file)
     try:
-        img = cv.imread(file, cv.IMREAD_GRAYSCALE)
+        img = cv.imread(file, cv.IMREAD_COLOR)
         img = img.astype(np.uint8)
         if ADD_BORDERS:
             image = reshape(img, OUTPUT_SIZE)

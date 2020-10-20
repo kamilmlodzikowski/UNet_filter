@@ -8,11 +8,13 @@ import cv2 as cv
 import model
 import pickle
 
-REBUILD_DATA = False
+REBUILD_DATA = True
 HARDER_DATA = False
 
 LOAD_MODEL = False
-MODEL_FILE = "model/UNet_mdl179.pickle"
+MODEL_FILE = "model/UNet_mdl80.pickle"
+# LAST_EPOCH = 80
+LAST_EPOCH = -1
 
 IN_DIR = "dataset/input"
 OUT_DIR = "dataset/output"
@@ -29,26 +31,29 @@ def load_data(rebuild=REBUILD_DATA):
         print("LOADING RAW DATA")
         create_training_data(IN_DIR, OUT_DIR)
 
-        print("PROCESSING RAW DATA")
+        print("PROCESSING RAW X DATA")
 
-        training_dataX = torch.Tensor([i for i in training_dataX]).view(-1, net.INPUT_SIZE, net.INPUT_SIZE)
+        training_dataX = torch.Tensor([i for i in training_dataX]).view(-1,3, net.INPUT_SIZE, net.INPUT_SIZE)
+        print("FINISHED PROCESSING RAW DATA")
         training_dataX = training_dataX / 255.0
 
-        training_dataY = torch.Tensor([i for i in training_dataY]).view(-1, net.OUTPUT_SIZE, net.OUTPUT_SIZE)
+        # print("SAVING X DATA")
+        # file = open("training_dataX.pickle", 'wb')
+        # pickle.dump(training_dataX, file)
+        # file.close()
+
+        print("PROCESSING RAW Y DATA")
+        training_dataY = torch.Tensor([i for i in training_dataY]).view(-1,3, net.OUTPUT_SIZE, net.OUTPUT_SIZE)
+        print("FINISHED PROCESSING RAW DATA")
         training_dataY = training_dataY / 255.0
 
-        print("FINISHED PROCESSING RAW DATA")
-
-        print("SAVING DATA")
-        file = open("training_dataX.pickle", 'wb')
-        pickle.dump(training_dataX, file)
-        file.close()
-        file = open("training_dataY.pickle", 'wb')
-        pickle.dump(training_dataY, file)
-        file.close()
-        # np.save("training_dataX.npy", training_dataX)
-        # np.save("training_dataY.npy", training_dataY)
-        print("FINISHED SAVING DATA")
+        # print("SAVING Y DATA")
+        # file = open("training_dataY.pickle", 'wb')
+        # pickle.dump(training_dataY, file)
+        # file.close()
+        # # np.save("training_dataX.npy", training_dataX)
+        # # np.save("training_dataY.npy", training_dataY)
+        # print("FINISHED SAVING DATA")
 
     else:
         print("LOADING DATA")
@@ -70,17 +75,17 @@ def create_training_data(dir_input, dir_output):
     for file in tqdm(os.listdir(dir_output)[:DATA_MAX_SIZE]):
         try:
             out_path = os.path.join(dir_output, file)
-            out_img = cv.imread(out_path, cv.IMREAD_GRAYSCALE)
+            out_img = cv.imread(out_path, cv.IMREAD_COLOR)
             in_file = file[:-4]+'_1.jpg'
             in_path = os.path.join(dir_input, in_file)
-            in_img = cv.imread(in_path, cv.IMREAD_GRAYSCALE)
+            in_img = cv.imread(in_path, cv.IMREAD_COLOR)
             training_dataX.append(np.array(in_img))
             training_dataY.append(np.array(out_img))
 
             if HARDER_DATA:
                 in_file = file[:-4] + '_2.jpg'
                 in_path = os.path.join(dir_input, in_file)
-                in_img = cv.imread(in_path, cv.IMREAD_GRAYSCALE)
+                in_img = cv.imread(in_path, cv.IMREAD_COLOR)
                 training_dataX.append(np.array(in_img))
                 training_dataY.append(np.array(out_img))
 
@@ -116,15 +121,16 @@ load_data(rebuild=REBUILD_DATA)
 # training_dataX.to(device)
 # training_dataY.to(device)
 
-for epoch in range(EPOCHS):
+for epoch in range(LAST_EPOCH + 1, EPOCHS):
     print("Epoch: ", epoch)
     for i in tqdm(range(0, len(training_dataX), BATCH_SIZE)):
-        batch_X = training_dataX[i:i + BATCH_SIZE].view(-1, 1, net.INPUT_SIZE, net.INPUT_SIZE)
+        batch_X = training_dataX[i:i + BATCH_SIZE].view(-1, 3, net.INPUT_SIZE, net.INPUT_SIZE)
         batch_X = batch_X.to(device)
 
-        batch_Y = training_dataY[i:i + BATCH_SIZE].view(-1, 1, net.OUTPUT_SIZE, net.OUTPUT_SIZE)
+        batch_Y = training_dataY[i:i + BATCH_SIZE].view(-1, 3, net.OUTPUT_SIZE, net.OUTPUT_SIZE)
 
         net.zero_grad()
+        # print(batch_X)
         outputs = net(batch_X)
         # print("OUT: ", outputs.shape)
         # print("Y:   " ,batch_Y.shape)
